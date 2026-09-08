@@ -8,6 +8,31 @@
 #include <sstream>
 #include <string>
 
+#define ASSERT(x)                                                              \
+    do {                                                                       \
+        if (!(x))                                                              \
+            __builtin_debugtrap();                                             \
+    } while (0)
+
+#define GLCall(x)                                                              \
+    GLClearError();                                                            \
+    x;                                                                         \
+    ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+
+static void GLClearError() {
+    while (glGetError() != GL_NO_ERROR)
+        ;
+};
+
+static bool GLLogCall(const char *function, const char *file, int line) {
+    while (GLenum error = glGetError()) {
+        std::cout << "[OpenGL Error] (" << error << "): " << function << " "
+                  << file << ":" << line << std::endl;
+        return false;
+    }
+    return true;
+}
+
 struct ShaderProgramSource {
     std::string VertexSource;
     std::string FragmentSource;
@@ -116,14 +141,25 @@ int main(void) {
 
     glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
 
-    float positions[6] = {-0.5f, -0.5f, 0.0f, 0.5f, 0.5f, -0.5f};
+    float positions[12] = {
+        -0.5f, -0.5f, // 0
+        0.5f,  -0.5f, // 1
+        0.5f,  0.5f,  // 2
+        -0.5f, 0.5f,  // 3
+    };
+
+    // Index Buffer = transform any form into a triangle
+    unsigned int indices[] = {
+        0, 1, 2, //
+        2, 3, 0  //
+    };
 
     /* Create and fill the VBO (=Vertex Buffer Object), stores the actual vertex
      * data */
     unsigned int buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions,
+    glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions,
                  GL_STATIC_DRAW); // size in bytes
 
     /* Vertex shader input so position is vertex attribute 0 */
@@ -132,6 +168,12 @@ int main(void) {
     /* Define the descrption of how OpenGL should interpret data (then it's
      * stored by VAO) */
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+
+    unsigned int ibo; // Index Buffer Object, abstraction to reuse vertex data
+    glGenBuffers(1, &ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices,
+                 GL_STATIC_DRAW);
 
     ShaderProgramSource source = ParseShader("./res/shaders/Basic.shader");
     unsigned int shader =
@@ -146,7 +188,10 @@ int main(void) {
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        GLClearError();
+        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_INT, nullptr));
+
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);

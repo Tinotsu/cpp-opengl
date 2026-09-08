@@ -18,3 +18,7 @@
 - Program which runs on GPU
 - Vertex Shaders : Tell openGL where the vertex will be on the screen -> Provide vertex position.
 - Fragment Shaders : Program that is called for each pixels on the screen, process called rasterization stage.
+
+## Index Buffer
+
+Abstraction for reusing vertex data
