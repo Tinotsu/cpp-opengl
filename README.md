@@ -22,3 +22,7 @@
 ## Index Buffer
 
 Abstraction for reusing vertex data
+
+## Vertex Array
+
+OpenGL original way to bind vertex buffer with special specification.

@@ -1,3 +1,4 @@
+#include <thread>
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -113,6 +114,7 @@ int main(void) {
     /* Initialize the library */
     if (!glfwInit())
         return -1;
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -127,17 +129,14 @@ int main(void) {
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
+
+    glfwSwapInterval(1);
+
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         glfwTerminate();
         return -1;
     }
-
-    /* VAO = Vertex Array Object, stores the description of how OpenGL should
-     * interpret that data (defined by glVertexAttribPointer) */
-    unsigned int vao;
-    glGenVertexArrays(1, &vao); // Initialize the VAO
-    glBindVertexArray(vao);     // Active/Select the VAO
 
     glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
 
@@ -154,12 +153,18 @@ int main(void) {
         2, 3, 0  //
     };
 
+    /* VAO = Vertex Array Object, stores the description of how OpenGL should
+     * interpret that data (defined by glVertexAttribPointer) */
+    unsigned int vao;
+    glGenVertexArrays(1, &vao); // Initialize the VAO
+    glBindVertexArray(vao);     // Active/Select the VAO
+
     /* Create and fill the VBO (=Vertex Buffer Object), stores the actual vertex
      * data */
     unsigned int buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions,
+    glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions,
                  GL_STATIC_DRAW); // size in bytes
 
     /* Vertex shader input so position is vertex attribute 0 */
@@ -182,16 +187,41 @@ int main(void) {
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind the current buffer
 
+    int location = glGetUniformLocation(shader, "u_Color");
+    ASSERT(location != -1);
+    GLCall(glUniform4f(location, 0.2f, 0.3f, 0.8f, 1.0f));
+
+    // Unbind Everything
+    glBindVertexArray(0);
+    glUseProgram(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    float r = 0.0f;
+    float increment = 0.05;
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
 
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
-        GLClearError();
-        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_INT, nullptr));
+        glUseProgram(shader);
+        GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
 
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(vao);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+
+        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+
+        if (r > 1.0f) {
+            increment = -0.05f;
+        } else if (r < 0.0f) {
+            increment = 0.05f;
+        }
+
+        r += increment;
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
