@@ -8,6 +8,10 @@ add_subdirectory(vendor/glfw-3.5.1)
 
 add_executable(Application
   src/Application.cpp
+  src/IndexBuffer.cpp
+  src/VertexBuffer.cpp
+  src/VertexArray.cpp
+  src/Renderer.cpp
   vendor/glad/src/glad.c
 )
 

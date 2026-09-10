@@ -23,6 +23,6 @@
 
 Abstraction for reusing vertex data
 
-## Vertex Array
+## Vertex Array (VAO)
 
 OpenGL original way to bind vertex buffer with special specification.

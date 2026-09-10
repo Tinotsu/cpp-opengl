@@ -1,3 +1,4 @@
+#include "VertexArray.h"
 #include <thread>
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_NONE
@@ -137,16 +138,15 @@ int main(void) {
     glGenVertexArrays(1, &vao); // Initialize the VAO
     glBindVertexArray(vao);     // Active/Select the VAO
 
+    VertexArray va;
+
     /* Create and fill the VBO (=Vertex Buffer Object), stores the actual vertex
      * data */
     VertexBuffer vb(positions, 4 * 2 * sizeof(float));
 
-    /* Vertex shader input so position is vertex attribute 0 */
-    glEnableVertexAttribArray(0);
-
-    /* Define the descrption of how OpenGL should interpret data (then it's
-     * stored by VAO) */
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+    VertexBufferLayout layout;
+    layout.Push<float>(2);
+    va.AddBuffer(vb, layout);
 
     /* Index Buffer Object, abstraction to reuse vertex data */
     IndexBuffer ib(indices, 6);
@@ -183,6 +183,7 @@ int main(void) {
         glBindVertexArray(vao);
 
         ib.Bind();
+        va.Bind();
 
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
