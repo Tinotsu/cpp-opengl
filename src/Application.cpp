@@ -4,35 +4,13 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
+#include "IndexBuffer.h"
+#include "Renderer.h"
+#include "VertexBuffer.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
-
-#define ASSERT(x)                                                              \
-    do {                                                                       \
-        if (!(x))                                                              \
-            __builtin_debugtrap();                                             \
-    } while (0)
-
-#define GLCall(x)                                                              \
-    GLClearError();                                                            \
-    x;                                                                         \
-    ASSERT(GLLogCall(#x, __FILE__, __LINE__))
-
-static void GLClearError() {
-    while (glGetError() != GL_NO_ERROR)
-        ;
-};
-
-static bool GLLogCall(const char *function, const char *file, int line) {
-    while (GLenum error = glGetError()) {
-        std::cout << "[OpenGL Error] (" << error << "): " << function << " "
-                  << file << ":" << line << std::endl;
-        return false;
-    }
-    return true;
-}
 
 struct ShaderProgramSource {
     std::string VertexSource;
@@ -161,11 +139,7 @@ int main(void) {
 
     /* Create and fill the VBO (=Vertex Buffer Object), stores the actual vertex
      * data */
-    unsigned int buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions,
-                 GL_STATIC_DRAW); // size in bytes
+    VertexBuffer vb(positions, 4 * 2 * sizeof(float));
 
     /* Vertex shader input so position is vertex attribute 0 */
     glEnableVertexAttribArray(0);
@@ -174,11 +148,8 @@ int main(void) {
      * stored by VAO) */
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
 
-    unsigned int ibo; // Index Buffer Object, abstraction to reuse vertex data
-    glGenBuffers(1, &ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices,
-                 GL_STATIC_DRAW);
+    /* Index Buffer Object, abstraction to reuse vertex data */
+    IndexBuffer ib(indices, 6);
 
     ShaderProgramSource source = ParseShader("./res/shaders/Basic.shader");
     unsigned int shader =
@@ -211,7 +182,7 @@ int main(void) {
 
         glBindVertexArray(vao);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+        ib.Bind();
 
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
