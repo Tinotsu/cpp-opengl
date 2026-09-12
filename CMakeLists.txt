@@ -21,6 +21,7 @@ add_executable(Application
 target_include_directories(Application PRIVATE
   vendor/glad/include
   vendor/stb_image
+  vendor/glm
 )
 
 target_link_libraries(Application PRIVATE
