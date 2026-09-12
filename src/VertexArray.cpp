@@ -1,5 +1,6 @@
 #include "VertexArray.h"
 #include "Renderer.h"
+#include "VertexBufferLayout.h"
 
 #include <GLFW/glfw3.h>
 #include <OpenGL/gl.h>

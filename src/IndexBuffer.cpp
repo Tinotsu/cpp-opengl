@@ -3,7 +3,8 @@
 #include <GLFW/glfw3.h>
 #include <OpenGL/gl.h>
 
-IndexBuffer::IndexBuffer(unsigned int *data, unsigned int count) {
+IndexBuffer::IndexBuffer(unsigned int *data, unsigned int count)
+    : m_Count(count) {
     ASSERT(sizeof(unsigned int) == sizeof(GLuint));
 
     GLCall(glGenBuffers(1, &m_RendererID));

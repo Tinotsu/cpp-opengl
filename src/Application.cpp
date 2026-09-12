@@ -1,4 +1,3 @@
-#include "VertexArray.h"
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -7,7 +6,9 @@
 #include "IndexBuffer.h"
 #include "Renderer.h"
 #include "Shader.h"
+#include "Texture.h"
 #include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
 #include <iostream>
 
 int main(void) {
@@ -42,11 +43,11 @@ int main(void) {
 
     glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
 
-    float positions[12] = {
-        -0.5f, -0.5f, // 0
-        0.5f,  -0.5f, // 1
-        0.5f,  0.5f,  // 2
-        -0.5f, 0.5f,  // 3
+    float positions[] = {
+        -0.5f, -0.5f, 0.0F, 0.0f, // 0
+        0.5f,  -0.5f, 1.0f, 0.0f, // 1
+        0.5f,  0.5f,  1.0,  1.0f, // 2
+        -0.5f, 0.5f,  0.0f, 1.0f  // 3
     };
 
     // Index Buffer = transform any form into a triangle
@@ -55,19 +56,17 @@ int main(void) {
         2, 3, 0  //
     };
 
-    /* VAO = Vertex Array Object, stores the description of how OpenGL should
-     * interpret that data (defined by glVertexAttribPointer) */
-    unsigned int vao;
-    glGenVertexArrays(1, &vao); // Initialize the VAO
-    glBindVertexArray(vao);     // Active/Select the VAO
+    GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    GLCall(glEnable(GL_BLEND));
 
     VertexArray va;
 
     /* Create and fill the VBO (=Vertex Buffer Object), stores the actual vertex
      * data */
-    VertexBuffer vb(positions, 4 * 2 * sizeof(float));
+    VertexBuffer vb(positions, 4 * 4 * sizeof(float));
 
     VertexBufferLayout layout;
+    layout.Push<float>(2);
     layout.Push<float>(2);
     va.AddBuffer(vb, layout);
 
@@ -79,29 +78,29 @@ int main(void) {
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind the current buffer
     shader.SetUniform4f("u_Color", 0.2f, 0.3f, 0.8f, 1.0f);
 
+    Texture texture("res/textures/capsule_corp.jpeg");
+    texture.Bind();
+    shader.SetUniform1i("u_Texture", 0);
+
     va.UnBind();
     vb.UnBind();
     ib.UnBind();
     shader.UnBind();
+
+    Renderer renderer;
 
     float r = 0.0f;
     float increment = 0.05;
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window)) {
-
         /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
+        renderer.Clear();
 
         shader.Bind();
         shader.SetUniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
 
-        glBindVertexArray(vao);
-
-        ib.Bind();
-        va.Bind();
-
-        GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+        renderer.Draw(va, ib, shader);
 
         if (r > 1.0f) {
             increment = -0.05f;
