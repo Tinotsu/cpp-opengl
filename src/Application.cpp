@@ -1,14 +1,16 @@
+#include "imgui.h"
 #define GL_SILENCE_DEPRECATION
 #define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-#include <glad/glad.h>
-
 #include "IndexBuffer.h"
 #include "Renderer.h"
 #include "Shader.h"
 #include "Texture.h"
 #include "VertexBuffer.h"
 #include "VertexBufferLayout.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 #include <iostream>
 
 #include "glm/glm.hpp"
@@ -78,15 +80,11 @@ int main(void) {
 
     glm::mat4 proj = glm::ortho(-4.0f, 4.0f, -3.0f, 3.0f, -1.0f, 1.0f);
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-2, 0, 0));
-    glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(2, 2, 0));
-
-    glm::mat4 mvp = proj * view * model;
 
     Shader shader("./res/shaders/Basic.shader");
     shader.Bind();
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Unbind the current buffer
     shader.SetUniform4f("u_Color", 0.2f, 0.3f, 0.8f, 1.0f);
-    shader.SetUniformMat4f("u_MVP", mvp);
 
     Texture texture("res/textures/capsule_corp.jpeg");
     texture.Bind();
@@ -99,6 +97,14 @@ int main(void) {
 
     Renderer renderer;
 
+    ImGui::CreateContext();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGuiIO &io = ImGui::GetIO();
+    ImGui::StyleColorsDark();
+
+    glm::vec3 translation(2, 2, 0);
+
     float r = 0.0f;
     float increment = 0.05;
 
@@ -107,8 +113,17 @@ int main(void) {
         /* Render here */
         renderer.Clear();
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
+
+        glm::mat4 mvp = proj * view * model;
+
         shader.Bind();
         shader.SetUniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
+        shader.SetUniformMat4f("u_MVP", mvp);
 
         renderer.Draw(va, ib, shader);
 
@@ -120,6 +135,20 @@ int main(void) {
 
         r += increment;
 
+        {
+
+            ImGui::Begin("Hello, world!"); // Create a window called "Hello,
+                                           // world!" and append into it.
+
+            ImGui::SliderFloat3("Translation", &translation.x, 0.0f, 1.0f);
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
+                        1000.0f / io.Framerate, io.Framerate);
+            ImGui::End();
+        }
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
 
@@ -127,6 +156,9 @@ int main(void) {
         glfwPollEvents();
     }
 
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
     return 0;
 }
